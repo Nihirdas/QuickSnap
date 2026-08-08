@@ -25,6 +25,8 @@ bar and waits for the shortcut.
 ## Build & run
 
 ```bash
+git clone https://github.com/Nihirdas/QuickSnap.git
+cd QuickSnap
 ./build_app.sh
 open build/QuickSnap.app
 ```
@@ -61,7 +63,7 @@ A small, dependency-free Swift package. The interesting pieces:
 | Global shortcut    | Carbon `RegisterEventHotKey` — fires app-wide, no Accessibility permission needed |
 | Screen capture     | `ScreenCaptureKit` (`SCScreenshotManager`), Apple's modern capture API |
 | Clipboard + saving | `NSPasteboard` and `NSBitmapImageRep` → PNG                         |
-| Settings UI        | SwiftUI, with a small AppKit view bridged in to record the shortcut |
+| Settings UI        | AppKit — an `NSWindow` with a custom `NSView` shortcut recorder     |
 
 ## Roadmap
 
