@@ -70,7 +70,15 @@ A small, dependency-free Swift package. The interesting pieces:
 - [ ] Region / window capture (not just full screen)
 - [ ] Quick annotation (arrow, box, redaction) before copying
 - [ ] Launch at login
-- [ ] Optional cross-platform build (Windows)
+- [x] Windows version — see [`windows/`](windows/) (beta)
+
+## Windows
+
+A Windows counterpart (C#/.NET tray app) lives in [`windows/`](windows/) — same
+idea: `Ctrl+Alt+S` captures the whole screen, saves a PNG, and copies it to the
+clipboard silently, filling the gap `Win+PrtScn` (no clipboard) and the Snipping
+Tool (overlay required) leave open. Build steps are in
+[windows/README.md](windows/README.md); CI publishes the `.exe` on each push.
 
 ## License
 
