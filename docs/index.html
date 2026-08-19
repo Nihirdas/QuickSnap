@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuickSnap — one‑keystroke screenshots, saved & copied</title>
+<meta name="description" content="QuickSnap is a tiny, free, open-source screenshot tool for macOS and Windows. One hotkey captures the whole screen, saves a PNG to your folder, and copies it to the clipboard — silently. Built for people who capture a lot of screens, like QA." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%B8%3C/text%3E%3C/svg%3E" />
+<style>
+  :root{
+    --bg:#0b0d12; --bg2:#0f131b; --card:#141a24; --line:#232b39;
+    --text:#e7ebf3; --muted:#98a2b6; --faint:#6b7488;
+    --accent:#7c8bff; --accent2:#63e6be; --accent-grad:linear-gradient(120deg,#7c8bff,#63e6be);
+    --radius:16px; --maxw:1040px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px}
+  .btn{
+    display:inline-flex; align-items:center; gap:.5em; padding:.8em 1.3em; border-radius:12px;
+    font-weight:600; text-decoration:none; border:1px solid transparent; cursor:pointer;
+    transition:transform .15s ease, background .2s ease, border-color .2s ease;
+  }
+  .btn:hover{transform:translateY(-2px)}
+  .btn-primary{background:var(--accent-grad); color:#0a0c10}
+  .btn-ghost{border-color:var(--line); color:var(--text); background:transparent}
+  .btn-ghost:hover{border-color:var(--accent)}
+
+  /* Hero */
+  header.hero{
+    position:relative; overflow:hidden; padding:26px 0 90px;
+    background:
+      radial-gradient(1200px 500px at 70% -10%, rgba(124,139,255,.16), transparent 60%),
+      radial-gradient(900px 400px at 10% 0%, rgba(99,230,190,.10), transparent 55%);
+  }
+  nav{display:flex; align-items:center; justify-content:space-between; padding:22px 0}
+  .brand{display:flex; align-items:center; gap:.55em; font-weight:800; letter-spacing:-.02em; font-size:1.15rem}
+  .brand .dot{width:22px;height:22px;border-radius:7px;background:var(--accent-grad);display:inline-block}
+  nav .links{display:flex; gap:22px; align-items:center; color:var(--muted); font-size:.95rem}
+  nav .links a{text-decoration:none}
+  nav .links a:hover{color:var(--text)}
+
+  .hero-inner{text-align:center; padding-top:52px}
+  .pill{
+    display:inline-flex; gap:.5em; align-items:center; font-size:.8rem; color:var(--muted);
+    border:1px solid var(--line); border-radius:999px; padding:.4em .9em; margin-bottom:26px; background:rgba(255,255,255,.02)
+  }
+  .pill b{color:var(--accent2)}
+  h1{
+    font-size:clamp(2.3rem,6vw,4rem); line-height:1.05; letter-spacing:-.03em; margin:.1em 0 .35em;
+    font-weight:800;
+  }
+  h1 .grad{background:var(--accent-grad); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .lede{font-size:clamp(1.05rem,2.4vw,1.3rem); color:var(--muted); max-width:640px; margin:0 auto 34px}
+  .cta{display:flex; gap:14px; justify-content:center; flex-wrap:wrap}
+
+  .keys{display:flex; gap:10px; justify-content:center; margin-top:44px}
+  kbd{
+    font:600 1rem/1 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--text);
+    background:var(--card); border:1px solid var(--line); border-bottom-width:3px;
+    border-radius:10px; padding:.7em .9em; min-width:2.4em; text-align:center;
+  }
+  .keys .caption{align-self:center; color:var(--faint); font-size:.9rem; margin-left:8px}
+
+  /* Sections */
+  section{padding:76px 0}
+  .eyebrow{color:var(--accent); font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:.8rem; margin:0 0 12px}
+  h2{font-size:clamp(1.6rem,3.6vw,2.3rem); letter-spacing:-.02em; margin:0 0 16px; font-weight:800}
+  .section-lede{color:var(--muted); max-width:640px; margin:0 0 8px; font-size:1.05rem}
+  .divider{border:0; border-top:1px solid var(--line); margin:0}
+
+  /* Problem / solution split */
+  .split{display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:34px}
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:28px}
+  .panel h3{margin:.1em 0 .6em; font-size:1.15rem}
+  .panel.problem{border-color:#3a2730}
+  .panel.problem h3{color:#ff9b9b}
+  .panel.solution{border-color:#25402f}
+  .panel.solution h3{color:var(--accent2)}
+  .panel ul{margin:.5em 0 0; padding-left:1.1em; color:var(--muted)}
+  .panel li{margin:.5em 0}
+  .panel li b{color:var(--text)}
+
+  /* Steps */
+  .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:22px; margin-top:34px; counter-reset:s}
+  .step{background:var(--bg2); border:1px solid var(--line); border-radius:var(--radius); padding:26px; position:relative}
+  .step::before{
+    counter-increment:s; content:counter(s); display:flex; align-items:center; justify-content:center;
+    width:38px;height:38px;border-radius:10px;background:var(--accent-grad); color:#0a0c10; font-weight:800; margin-bottom:16px;
+  }
+  .step h3{margin:0 0 .4em; font-size:1.05rem}
+  .step p{margin:0; color:var(--muted); font-size:.96rem}
+
+  /* Features */
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:34px}
+  .feature{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:24px}
+  .feature .ico{font-size:1.5rem}
+  .feature h3{margin:.6em 0 .3em; font-size:1.02rem}
+  .feature p{margin:0; color:var(--muted); font-size:.93rem}
+
+  /* Platforms */
+  .platforms{display:flex; gap:18px; flex-wrap:wrap; margin-top:30px}
+  .plat{flex:1 1 260px; background:var(--bg2); border:1px solid var(--line); border-radius:var(--radius); padding:24px}
+  .plat h3{margin:0 0 .3em; display:flex; align-items:center; gap:.5em}
+  .plat code{color:var(--accent2); background:rgba(99,230,190,.08); padding:.15em .45em; border-radius:6px; font-size:.85em}
+  .plat p{margin:.4em 0 0; color:var(--muted); font-size:.93rem}
+
+  /* Open source CTA */
+  .os{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:24px; padding:48px; text-align:center; margin-top:20px}
+  .os h2{margin-bottom:10px}
+  .os p{color:var(--muted); max-width:560px; margin:0 auto 26px}
+
+  footer{border-top:1px solid var(--line); padding:36px 0 60px; color:var(--faint); font-size:.9rem}
+  footer .wrap{display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:center}
+  footer a{color:var(--muted); text-decoration:none; margin-left:18px}
+  footer a:hover{color:var(--text)}
+
+  @media (max-width:820px){
+    .split,.steps,.grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <nav>
+      <div class="brand"><span class="dot"></span> QuickSnap</div>
+      <div class="links">
+        <a href="#problem">Why</a>
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="https://github.com/Nihirdas/QuickSnap">GitHub ↗</a>
+      </div>
+    </nav>
+
+    <div class="hero-inner">
+      <span class="pill">📸 Free &amp; open source · <b>MIT</b> · macOS + Windows</span>
+      <h1>One keystroke.<br><span class="grad">Screenshot saved <em>and</em> copied.</span></h1>
+      <p class="lede">
+        A tiny, native screenshot tool that grabs your whole screen, saves a PNG to the
+        folder you choose, and drops it on your clipboard — all in a single silent hotkey.
+        No overlay, no mode-picking, no digging through folders.
+      </p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/Nihirdas/QuickSnap">Get it on GitHub</a>
+        <a class="btn btn-ghost" href="#problem">See the problem it solves</a>
+      </div>
+      <div class="keys">
+        <kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>S</kbd>
+        <span class="caption">on macOS &nbsp;·&nbsp; <b style="color:var(--muted)">Ctrl</b> Alt S on Windows</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<hr class="divider" />
+
+<!-- PROBLEM -->
+<section id="problem">
+  <div class="wrap">
+    <p class="eyebrow">The problem</p>
+    <h2>The screenshot friction QA knows too well</h2>
+    <p class="section-lede">
+      When you're testing, you capture constantly — repro steps, failures, odd UI states —
+      to drop into bug tickets and test evidence. But the built-in tools make you pick one thing at a time.
+    </p>
+
+    <div class="split">
+      <div class="panel problem">
+        <h3>What the OS gives you</h3>
+        <ul>
+          <li><b>macOS:</b> a shortcut either <b>saves a file</b> or <b>copies to the clipboard</b> — never both.</li>
+          <li><b>Windows:</b> <code>Win+PrtScn</code> saves a file but skips the clipboard; the Snipping Tool does both but <b>forces an overlay</b> and a click.</li>
+          <li>So you capture twice, hunt for the file, or lose the exact state you were testing.</li>
+          <li>Multiply that by dozens of screenshots a day, every day.</li>
+        </ul>
+      </div>
+      <div class="panel solution">
+        <h3>What QuickSnap does</h3>
+        <ul>
+          <li>One <b>silent</b> hotkey — no overlay, no dimming, no mode buttons.</li>
+          <li>Captures the <b>whole screen</b> instantly.</li>
+          <li><b>Saves a timestamped PNG</b> to your evidence folder <em>and</em> copies it to the clipboard.</li>
+          <li>Paste straight into the Jira ticket. Keep the file for the test record. One motion.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section id="how" style="background:var(--bg2); border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
+  <div class="wrap">
+    <p class="eyebrow">How it works</p>
+    <h2>Three steps — and step&nbsp;1 is the only one you do</h2>
+    <div class="steps">
+      <div class="step">
+        <h3>Press the hotkey</h3>
+        <p>Anywhere, in any app. <kbd style="border-bottom-width:2px;padding:.35em .5em;min-width:0">⌃⌥⌘S</kbd> on macOS, <kbd style="border-bottom-width:2px;padding:.35em .5em;min-width:0">Ctrl+Alt+S</kbd> on Windows.</p>
+      </div>
+      <div class="step">
+        <h3>Whole screen is captured</h3>
+        <p>Silently — no overlay, no interruption to whatever you were doing or watching.</p>
+      </div>
+      <div class="step">
+        <h3>Saved &amp; on your clipboard</h3>
+        <p>A PNG lands in the folder you chose, and the same image is ready to paste anywhere.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="wrap">
+    <p class="eyebrow">Features</p>
+    <h2>Small on purpose</h2>
+    <div class="grid">
+      <div class="feature"><div class="ico">⌨️</div><h3>One-keystroke capture</h3><p>A global hotkey that works from any app, even full-screen video.</p></div>
+      <div class="feature"><div class="ico">📋</div><h3>Saved <em>and</em> copied</h3><p>Both outputs, every time — a file for the record, the clipboard for the ticket.</p></div>
+      <div class="feature"><div class="ico">📁</div><h3>Your folder</h3><p>Point it at Pictures, Desktop, Downloads, or any evidence folder you like.</p></div>
+      <div class="feature"><div class="ico">🪶</div><h3>Native &amp; lightweight</h3><p>No Electron, no bloat. Menu-bar on Mac, tray on Windows — out of your way.</p></div>
+      <div class="feature"><div class="ico">🔓</div><h3>Free &amp; open source</h3><p>MIT-licensed. Read every line, fork it, make it yours.</p></div>
+      <div class="feature"><div class="ico">🧩</div><h3>Zero dependencies</h3><p>Just the OS frameworks — nothing phones home, nothing to trust but the code.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- PLATFORMS -->
+<section style="padding-top:0">
+  <div class="wrap">
+    <p class="eyebrow">Cross-platform</p>
+    <h2>macOS &amp; Windows</h2>
+    <div class="platforms">
+      <div class="plat">
+        <h3>🍎 macOS</h3>
+        <p>Native <code>Swift</code> + AppKit, using <code>ScreenCaptureKit</code>. A menu-bar app, no Dock icon. macOS 14+.</p>
+      </div>
+      <div class="plat">
+        <h3>🪟 Windows</h3>
+        <p>Native <code>C#/.NET</code> tray app. Fills the gap <code>Win+PrtScn</code> and the Snipping Tool leave open. Windows 10/11.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- OPEN SOURCE CTA -->
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="os">
+      <p class="eyebrow" style="color:var(--accent2)">Open source</p>
+      <h2>Built in the open</h2>
+      <p>QuickSnap is free and MIT-licensed, built by <b>Nihir Kumar</b>. The full source for both the macOS and Windows apps lives on GitHub — issues, forks and stars welcome.</p>
+      <a class="btn btn-primary" href="https://github.com/Nihirdas/QuickSnap">⭐ Star it on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div><span class="brand" style="font-size:1rem"><span class="dot" style="width:16px;height:16px"></span> QuickSnap</span></div>
+    <div>
+      <a href="https://github.com/Nihirdas/QuickSnap">Source</a>
+      <a href="https://github.com/Nihirdas/QuickSnap/blob/main/LICENSE">MIT License</a>
+      <a href="https://github.com/Nihirdas">@Nihirdas</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
