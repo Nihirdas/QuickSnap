@@ -9,11 +9,12 @@ final class SettingsWindowController: NSWindowController {
 
     private let pathLabel = NSTextField(labelWithString: "")
     private let recorder = RecorderView()
+    private let annotateRecorder = RecorderView()
 
     init(onChange: @escaping () -> Void) {
         self.onChange = onChange
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 460, height: 250),
+            contentRect: NSRect(x: 0, y: 0, width: 460, height: 340),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -48,8 +49,7 @@ final class SettingsWindowController: NSWindowController {
         folderRow.orientation = .horizontal
         folderRow.spacing = 8
 
-        let shortcutHeading = label("Capture shortcut", font: .boldSystemFont(ofSize: 13))
-
+        let shortcutHeading = label("Save & Copy shortcut", font: .boldSystemFont(ofSize: 13))
         recorder.display = Preferences.shared.shortcutDisplay
         recorder.onCapture = { [weak self] keyCode, modifiers, text in
             Preferences.shared.keyCode = keyCode
@@ -57,15 +57,24 @@ final class SettingsWindowController: NSWindowController {
             Preferences.shared.shortcutDisplay = text
             self?.onChange()
         }
-        recorder.translatesAutoresizingMaskIntoConstraints = false
-        recorder.heightAnchor.constraint(equalToConstant: 34).isActive = true
-        recorder.widthAnchor.constraint(equalToConstant: 220).isActive = true
+        configureRecorder(recorder)
 
-        let caption = label("Click the field, then press your combination (include ⌘, ⌥ or ⌃).",
+        let annotateHeading = label("Annotate shortcut", font: .boldSystemFont(ofSize: 13))
+        annotateRecorder.display = Preferences.shared.annotateShortcutDisplay
+        annotateRecorder.onCapture = { [weak self] keyCode, modifiers, text in
+            Preferences.shared.annotateKeyCode = keyCode
+            Preferences.shared.annotateCarbonModifiers = modifiers
+            Preferences.shared.annotateShortcutDisplay = text
+            self?.onChange()
+        }
+        configureRecorder(annotateRecorder)
+
+        let caption = label("Click a field, then press your combination (include ⌘, ⌥ or ⌃).",
                             font: .systemFont(ofSize: 11))
         caption.textColor = .secondaryLabelColor
 
-        let stack = NSStackView(views: [title, saveHeading, folderRow, shortcutHeading, recorder, caption])
+        let stack = NSStackView(views: [title, saveHeading, folderRow, shortcutHeading, recorder,
+                                        annotateHeading, annotateRecorder, caption])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 10
@@ -89,6 +98,12 @@ final class SettingsWindowController: NSWindowController {
         let field = NSTextField(labelWithString: text)
         field.font = font
         return field
+    }
+
+    private func configureRecorder(_ view: RecorderView) {
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.heightAnchor.constraint(equalToConstant: 34).isActive = true
+        view.widthAnchor.constraint(equalToConstant: 220).isActive = true
     }
 
     // MARK: - Actions

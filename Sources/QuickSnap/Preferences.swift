@@ -13,6 +13,9 @@ final class Preferences {
         static let keyCode = "hotKeyCode"
         static let modifiers = "hotKeyModifiers"
         static let display = "hotKeyDisplay"
+        static let annotateKeyCode = "annotateHotKeyCode"
+        static let annotateModifiers = "annotateHotKeyModifiers"
+        static let annotateDisplay = "annotateHotKeyDisplay"
     }
 
     // MARK: - Save folder
@@ -37,12 +40,12 @@ final class Preferences {
         set { defaults.set(newValue.path, forKey: Key.saveFolder) }
     }
 
-    // MARK: - Hotkey (defaults to ⌃⌥⌘S)
+    // MARK: - Capture (save & copy) hotkey — defaults to ⌃⇧C
 
     var keyCode: UInt32 {
         get {
             guard defaults.object(forKey: Key.keyCode) != nil else {
-                return UInt32(kVK_ANSI_S)
+                return UInt32(kVK_ANSI_C)
             }
             return UInt32(defaults.integer(forKey: Key.keyCode))
         }
@@ -52,7 +55,7 @@ final class Preferences {
     var carbonModifiers: UInt32 {
         get {
             guard defaults.object(forKey: Key.modifiers) != nil else {
-                return UInt32(controlKey | optionKey | cmdKey)
+                return UInt32(controlKey | shiftKey)
             }
             return UInt32(defaults.integer(forKey: Key.modifiers))
         }
@@ -60,7 +63,34 @@ final class Preferences {
     }
 
     var shortcutDisplay: String {
-        get { defaults.string(forKey: Key.display) ?? "⌃⌥⌘S" }
+        get { defaults.string(forKey: Key.display) ?? "⌃⇧C" }
         set { defaults.set(newValue, forKey: Key.display) }
+    }
+
+    // MARK: - Annotate hotkey — defaults to ⌃⇧Q (⇧⌘Q is macOS Log Out, so avoided)
+
+    var annotateKeyCode: UInt32 {
+        get {
+            guard defaults.object(forKey: Key.annotateKeyCode) != nil else {
+                return UInt32(kVK_ANSI_Q)
+            }
+            return UInt32(defaults.integer(forKey: Key.annotateKeyCode))
+        }
+        set { defaults.set(Int(newValue), forKey: Key.annotateKeyCode) }
+    }
+
+    var annotateCarbonModifiers: UInt32 {
+        get {
+            guard defaults.object(forKey: Key.annotateModifiers) != nil else {
+                return UInt32(controlKey | shiftKey)
+            }
+            return UInt32(defaults.integer(forKey: Key.annotateModifiers))
+        }
+        set { defaults.set(Int(newValue), forKey: Key.annotateModifiers) }
+    }
+
+    var annotateShortcutDisplay: String {
+        get { defaults.string(forKey: Key.annotateDisplay) ?? "⌃⇧Q" }
+        set { defaults.set(newValue, forKey: Key.annotateDisplay) }
     }
 }

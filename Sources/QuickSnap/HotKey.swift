@@ -14,7 +14,12 @@ final class HotKey {
 
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandler: EventHandlerRef?
-    private let hotKeyID = EventHotKeyID(signature: fourCharCode("QSNP"), id: 1)
+    private let hotKeyID: EventHotKeyID
+
+    /// - Parameter id: a per-hotkey identifier so multiple hotkeys don't collide.
+    init(id: UInt32) {
+        hotKeyID = EventHotKeyID(signature: fourCharCode("QSNP"), id: id)
+    }
 
     /// Registers (or re-registers) the hotkey.
     /// - Parameters:

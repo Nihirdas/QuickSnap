@@ -4,12 +4,14 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var statusItem: NSStatusItem!
-    private let hotKey = HotKey()
+    private let captureHotKey = HotKey(id: 1)
+    private let annotateHotKey = HotKey(id: 2)
     private var settingsController: SettingsWindowController?
+    private var annotateEditor: AnnotationEditorWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setUpStatusItem()
-        registerHotKeyFromPreferences()
+        registerHotKeys()
     }
 
     // MARK: - Menu bar
@@ -34,6 +36,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                  keyEquivalent: "")
         capture.target = self
         menu.addItem(capture)
+
+        let annotate = NSMenuItem(title: "Capture & Annotate…",
+                                  action: #selector(captureAnnotate),
+                                  keyEquivalent: "")
+        annotate.target = self
+        menu.addItem(annotate)
 
         menu.addItem(.separator())
 
@@ -62,10 +70,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(.separator())
 
-        let shortcutInfo = NSMenuItem(title: "Shortcut: \(Preferences.shared.shortcutDisplay)",
-                                      action: nil, keyEquivalent: "")
-        shortcutInfo.isEnabled = false
-        menu.addItem(shortcutInfo)
+        let captureShortcut = NSMenuItem(title: "Save & Copy: \(Preferences.shared.shortcutDisplay)",
+                                         action: nil, keyEquivalent: "")
+        captureShortcut.isEnabled = false
+        menu.addItem(captureShortcut)
+
+        let annotateShortcut = NSMenuItem(title: "Annotate: \(Preferences.shared.annotateShortcutDisplay)",
+                                          action: nil, keyEquivalent: "")
+        annotateShortcut.isEnabled = false
+        menu.addItem(annotateShortcut)
 
         let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
@@ -85,6 +98,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func captureNow() {
         triggerCapture()
+    }
+
+    @objc private func captureAnnotate() {
+        triggerAnnotate()
     }
 
     @objc private func selectFolder(_ sender: NSMenuItem) {
@@ -119,16 +136,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func preferencesChanged() {
-        registerHotKeyFromPreferences()
+        registerHotKeys()
         rebuildMenu()
     }
 
-    // MARK: - Hotkey
+    // MARK: - Hotkeys
 
-    private func registerHotKeyFromPreferences() {
-        hotKey.onFire = { [weak self] in self?.triggerCapture() }
-        hotKey.register(keyCode: Preferences.shared.keyCode,
-                        carbonModifiers: Preferences.shared.carbonModifiers)
+    private func registerHotKeys() {
+        captureHotKey.onFire = { [weak self] in self?.triggerCapture() }
+        captureHotKey.register(keyCode: Preferences.shared.keyCode,
+                               carbonModifiers: Preferences.shared.carbonModifiers)
+
+        annotateHotKey.onFire = { [weak self] in self?.triggerAnnotate() }
+        annotateHotKey.register(keyCode: Preferences.shared.annotateKeyCode,
+                                carbonModifiers: Preferences.shared.annotateCarbonModifiers)
     }
 
     // MARK: - Capture flow
@@ -144,6 +165,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 showCaptureError(error)
             }
         }
+    }
+
+    // MARK: - Annotate flow
+
+    private func triggerAnnotate() {
+        Task { @MainActor in
+            do {
+                let image = try await ScreenCapturer.captureMainDisplay()
+                openAnnotationEditor(with: image)
+            } catch {
+                showCaptureError(error)
+            }
+        }
+    }
+
+    private func openAnnotationEditor(with image: CGImage) {
+        let editor = AnnotationEditorWindowController(
+            image: image,
+            saveFolder: Preferences.shared.saveFolderURL,
+            onClose: { [weak self] in self?.annotateEditor = nil }
+        )
+        annotateEditor = editor
+        NSApp.activate(ignoringOtherApps: true)
+        editor.showWindow(nil)
+        editor.window?.makeKeyAndOrderFront(nil)
     }
 
     /// Briefly swap the menu-bar icon to a checkmark as capture feedback.
