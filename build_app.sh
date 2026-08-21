@@ -48,8 +48,13 @@ cat > "${APP_DIR}/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-echo "▸ Ad-hoc code-signing…"
-codesign --force --deep --sign - "$APP_DIR"
+# Sign with a stable identity if one is provided. Set QUICKSNAP_SIGN_IDENTITY to
+# the name of a self-signed "Code Signing" certificate to keep macOS permissions
+# (e.g. Screen Recording) across rebuilds; otherwise fall back to ad-hoc, which
+# changes signature every build and forces macOS to re-ask for permission.
+SIGN_IDENTITY="${QUICKSNAP_SIGN_IDENTITY:--}"
+echo "▸ Code-signing (identity: ${SIGN_IDENTITY})…"
+codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_DIR"
 
 echo "✓ Built ${APP_DIR}"
 echo "  Run it with:  open \"${APP_DIR}\""
