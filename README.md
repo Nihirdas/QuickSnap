@@ -68,7 +68,7 @@ A small, dependency-free Swift package. The interesting pieces:
 ## Roadmap
 
 - [ ] Region / window capture (not just full screen)
-- [ ] Quick annotation (arrow, box, redaction) before copying
+- [ ] **Annotate mode** — a *second* hotkey opens a quick editor (arrow, box, circle, and text with adjustable size), then a single **Save & Copy** button saves the marked-up PNG, copies it to the clipboard, and closes. macOS first.
 - [ ] Launch at login
 - [x] Windows version — see [`windows/`](windows/) (beta)
 
