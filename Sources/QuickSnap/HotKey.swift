@@ -1,24 +1,31 @@
 import AppKit
 import Carbon.HIToolbox
 
-/// A single system-wide hotkey built on Carbon's `RegisterEventHotKey`.
+/// A system-wide hotkey built on Carbon's `RegisterEventHotKey`.
 ///
-/// Why Carbon? It's the lightest way to get a *global* shortcut (one that fires
-/// even when QuickSnap isn't the active app) and, unlike a CGEvent tap, it does
-/// not require Accessibility permission. It's an old API but still fully
-/// supported, and it keeps QuickSnap dependency-free.
+/// Why Carbon? It's the lightest way to get a *global* shortcut (fires even when
+/// QuickSnap isn't the active app) and, unlike a CGEvent tap, needs no
+/// Accessibility permission.
+///
+/// All hotkeys share ONE Carbon event handler that dispatches by id. Installing a
+/// separate handler per hotkey does NOT work: a handler that returns `noErr` tells
+/// Carbon the event was handled, so the other handlers never run — meaning only
+/// the last-registered hotkey would ever fire.
 final class HotKey {
 
-    /// Called on the main thread when the hotkey is pressed.
+    /// Called on the main thread when this hotkey is pressed.
     var onFire: (() -> Void)?
 
+    private let id: UInt32
     private var hotKeyRef: EventHotKeyRef?
-    private var eventHandler: EventHandlerRef?
-    private let hotKeyID: EventHotKeyID
 
-    /// - Parameter id: a per-hotkey identifier so multiple hotkeys don't collide.
+    private static let signature = fourCharCode("QSNP")
+    private static var registry: [UInt32: HotKey] = [:]
+    private static var sharedHandlerInstalled = false
+
+    /// - Parameter id: a per-hotkey identifier used to route events.
     init(id: UInt32) {
-        hotKeyID = EventHotKeyID(signature: fourCharCode("QSNP"), id: id)
+        self.id = id
     }
 
     /// Registers (or re-registers) the hotkey.
@@ -27,7 +34,10 @@ final class HotKey {
     ///   - carbonModifiers: a mask of `cmdKey`, `optionKey`, `controlKey`, `shiftKey`.
     func register(keyCode: UInt32, carbonModifiers: UInt32) {
         unregister()
-        installHandlerIfNeeded()
+        HotKey.installSharedHandlerIfNeeded()
+        HotKey.registry[id] = self
+
+        let hotKeyID = EventHotKeyID(signature: HotKey.signature, id: id)
         RegisterEventHotKey(keyCode, carbonModifiers, hotKeyID,
                             GetApplicationEventTarget(), 0, &hotKeyRef)
     }
@@ -37,21 +47,19 @@ final class HotKey {
             UnregisterEventHotKey(hotKeyRef)
             self.hotKeyRef = nil
         }
+        HotKey.registry[id] = nil
     }
 
-    private func installHandlerIfNeeded() {
-        guard eventHandler == nil else { return }
+    /// Installed once for the whole app; routes each hotkey event to its instance.
+    private static func installSharedHandlerIfNeeded() {
+        guard !sharedHandlerInstalled else { return }
+        sharedHandlerInstalled = true
 
         var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
                                  eventKind: UInt32(kEventHotKeyPressed))
 
-        // The C callback can't capture Swift context, so we hand it a pointer to
-        // `self` via `userData` and reconstruct the instance inside.
-        let selfPtr = Unmanaged.passUnretained(self).toOpaque()
-
-        InstallEventHandler(GetApplicationEventTarget(), { _, event, userData -> OSStatus in
-            guard let userData, let event else { return noErr }
-            let instance = Unmanaged<HotKey>.fromOpaque(userData).takeUnretainedValue()
+        InstallEventHandler(GetApplicationEventTarget(), { _, event, _ -> OSStatus in
+            guard let event else { return OSStatus(eventNotHandledErr) }
 
             var firedID = EventHotKeyID()
             GetEventParameter(event,
@@ -62,19 +70,18 @@ final class HotKey {
                               nil,
                               &firedID)
 
-            if firedID.signature == instance.hotKeyID.signature,
-               firedID.id == instance.hotKeyID.id {
-                DispatchQueue.main.async { instance.onFire?() }
+            guard firedID.signature == HotKey.signature,
+                  let hotKey = HotKey.registry[firedID.id] else {
+                return OSStatus(eventNotHandledErr)
             }
+
+            DispatchQueue.main.async { hotKey.onFire?() }
             return noErr
-        }, 1, &spec, selfPtr, &eventHandler)
+        }, 1, &spec, nil, nil)
     }
 
     deinit {
         unregister()
-        if let eventHandler {
-            RemoveEventHandler(eventHandler)
-        }
     }
 }
 
