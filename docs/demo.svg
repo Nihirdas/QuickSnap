@@ -64,11 +64,11 @@
     <animateTransform attributeName="transform" type="translate" values="0 10;0 10;0 0;0 0;0 0" keyTimes="0;0.72;0.8;0.94;1" dur="5s" repeatCount="indefinite"/>
     <rect x="196" y="196" width="248" height="52" rx="12" fill="#191a2e" stroke="#2b3350"/>
     <text x="222" y="217" fill="#7c8bff" font-family="-apple-system,Segoe UI,Roboto,sans-serif" font-size="13.5" font-weight="700">Annotate, then Save &amp; Copy</text>
-    <text x="222" y="235" fill="#98a2b6" font-family="-apple-system,Segoe UI,Roboto,sans-serif" font-size="12.5">arrow &middot; box &middot; circle &middot; text</text>
+    <text x="222" y="235" fill="#98a2b6" font-family="-apple-system,Segoe UI,Roboto,sans-serif" font-size="12.5">arrow · box · circle · text</text>
   </g>
 
   <!-- static legend -->
   <text x="320" y="284" text-anchor="middle" fill="#6b7488" font-family="-apple-system,Segoe UI,Roboto,sans-serif" font-size="12">
-    <tspan fill="#98a2b6" font-weight="700">⌃⇧C</tspan> save + copy &nbsp;&nbsp;·&nbsp;&nbsp; <tspan fill="#98a2b6" font-weight="700">⌃⇧Q</tspan> annotate
+    <tspan fill="#98a2b6" font-weight="700">⌃⇧C</tspan> save + copy &#160;&#160;·&#160;&#160; <tspan fill="#98a2b6" font-weight="700">⌃⇧Q</tspan> annotate
   </text>
 </svg>
