@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" width="640" height="300" role="img" aria-label="QuickSnap demo: one hotkey saves a screenshot and copies it; a second hotkey opens a quick annotate editor.">
+  <defs>
+    <linearGradient id="qsAcc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7c8bff"/>
+      <stop offset="1" stop-color="#63e6be"/>
+    </linearGradient>
+  </defs>
+
+  <!-- card -->
+  <rect width="640" height="300" rx="16" fill="#0e1017"/>
+  <rect x="0.5" y="0.5" width="639" height="299" rx="15.5" fill="none" stroke="#232b39"/>
+
+  <!-- wordmark -->
+  <rect x="26" y="24" width="15" height="15" rx="5" fill="url(#qsAcc)"/>
+  <text x="49" y="36" fill="#e7ebf3" font-family="-apple-system,Segoe UI,Roboto,sans-serif" font-size="14" font-weight="700">QuickSnap</text>
+
+  <!-- keycaps: ⌃ ⇧ + (C / Q) -->
+  <g font-family="ui-monospace,Menlo,monospace" font-size="18" font-weight="700" text-anchor="middle">
+    <g>
+      <rect x="236" y="118" width="48" height="42" rx="9" fill="#141a24" stroke="#2a3446" stroke-width="1.5"/>
+      <text x="260" y="145" fill="#e7ebf3">⌃</text>
+    </g>
+    <g>
+      <rect x="296" y="118" width="48" height="42" rx="9" fill="#141a24" stroke="#2a3446" stroke-width="1.5"/>
+      <text x="320" y="145" fill="#e7ebf3">⇧</text>
+    </g>
+    <!-- third cap: C (beat A) -->
+    <g>
+      <animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.48;0.52;0.96;1" dur="5s" repeatCount="indefinite"/>
+      <rect x="356" y="118" width="48" height="42" rx="9" fill="#141a24" stroke="#2a3446" stroke-width="1.5"/>
+      <text x="380" y="145" fill="#e7ebf3">C</text>
+    </g>
+    <!-- third cap: Q (beat B) -->
+    <g opacity="0">
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.48;0.52;0.96;1" dur="5s" repeatCount="indefinite"/>
+      <rect x="356" y="118" width="48" height="42" rx="9" fill="#141a24" stroke="#2a3446" stroke-width="1.5"/>
+      <text x="380" y="145" fill="#e7ebf3">Q</text>
+    </g>
+    <!-- press highlight over the caps (pulses on each "press") -->
+    <rect x="234" y="116" width="172" height="46" rx="11" fill="none" stroke="url(#qsAcc)" stroke-width="2.5" opacity="0">
+      <animate attributeName="opacity" values="0;0;0.95;0;0;0;0.95;0;0" keyTimes="0;0.12;0.16;0.24;0.58;0.6;0.64;0.72;1" dur="5s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+
+  <!-- capture flash across the whole card -->
+  <rect width="640" height="300" rx="16" fill="#ffffff" opacity="0">
+    <animate attributeName="opacity" values="0;0;0.35;0;0;0;0.35;0;0" keyTimes="0;0.17;0.2;0.27;0.62;0.65;0.68;0.75;1" dur="5s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- toast A: Saved & copied -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.24;0.3;0.44;0.5;1" dur="5s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="translate" values="0 10;0 10;0 0;0 0;0 0;0 0" keyTimes="0;0.24;0.32;0.44;0.5;1" dur="5s" repeatCount="indefinite"/>
+    <rect x="196" y="196" width="248" height="52" rx="12" fill="#12261d" stroke="#25402f"/>
+    <circle cx="224" cy="222" r="12" fill="#63e6be"/>
+    <path d="M 218 222 l 4.5 4.5 l 8 -9" fill="none" stroke="#0e1017" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="246" y="217" fill="#e7ebf3" font-family="-apple-system,Segoe UI,Roboto,sans-serif" font-size="13.5" font-weight="700">Saved to your folder</text>
+    <text x="246" y="235" fill="#98a2b6" font-family="-apple-system,Segoe UI,Roboto,sans-serif" font-size="12.5">&amp; copied to the clipboard</text>
+  </g>
+
+  <!-- toast B: Annotate -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.72;0.78;0.94;1" dur="5s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="translate" values="0 10;0 10;0 0;0 0;0 0" keyTimes="0;0.72;0.8;0.94;1" dur="5s" repeatCount="indefinite"/>
+    <rect x="196" y="196" width="248" height="52" rx="12" fill="#191a2e" stroke="#2b3350"/>
+    <text x="222" y="217" fill="#7c8bff" font-family="-apple-system,Segoe UI,Roboto,sans-serif" font-size="13.5" font-weight="700">Annotate, then Save &amp; Copy</text>
+    <text x="222" y="235" fill="#98a2b6" font-family="-apple-system,Segoe UI,Roboto,sans-serif" font-size="12.5">arrow &middot; box &middot; circle &middot; text</text>
+  </g>
+
+  <!-- static legend -->
+  <text x="320" y="284" text-anchor="middle" fill="#6b7488" font-family="-apple-system,Segoe UI,Roboto,sans-serif" font-size="12">
+    <tspan fill="#98a2b6" font-weight="700">⌃⇧C</tspan> save + copy &nbsp;&nbsp;·&nbsp;&nbsp; <tspan fill="#98a2b6" font-weight="700">⌃⇧Q</tspan> annotate
+  </text>
+</svg>

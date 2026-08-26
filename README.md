@@ -7,6 +7,10 @@ clipboard — all in a single keystroke.
 No Dock icon, no window in the way, no dependencies. It just lives in your menu
 bar and waits for the shortcut.
 
+<p align="center">
+  <img src="docs/demo.svg" width="640" alt="QuickSnap demo — one hotkey saves + copies a screenshot; a second opens a quick annotate editor">
+</p>
+
 ---
 
 ## What it does
