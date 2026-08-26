@@ -11,11 +11,12 @@ bar and waits for the shortcut.
 
 ## What it does
 
-- **Global shortcut** → capture the full screen (default `⌃⌥⌘S`, rebindable).
-- **Saves a PNG** to the folder you pick (Desktop by default; switch to Downloads
-  or any folder in Settings).
-- **Copies the same image to the clipboard** so you can paste it straight away.
-- Menu-bar only — lightweight and out of the way.
+- **Quick capture** (`⌃⇧C`, rebindable) → grab the whole screen, save a PNG to your
+  folder, and copy it to the clipboard — one silent keystroke.
+- **Annotate** (`⌃⇧Q`, rebindable) → capture, then mark it up in a quick editor
+  (arrow, box, circle, text) and **Save & Copy** in a single click.
+- **Choose your folder** — Desktop, Downloads, or any folder, from Settings.
+- Menu-bar only — lightweight, no Dock icon, no dependencies.
 
 ## Requirements
 
@@ -67,10 +68,10 @@ A small, dependency-free Swift package. The interesting pieces:
 
 ## Roadmap
 
-- [ ] Region / window capture (not just full screen)
-- [ ] **Annotate mode** — a *second* hotkey opens a quick editor (arrow, box, circle, and text with adjustable size), then a single **Save & Copy** button saves the marked-up PNG, copies it to the clipboard, and closes. macOS first.
-- [ ] Launch at login
+- [x] **Annotate mode** — second hotkey opens a quick editor (arrow, box, circle, text) → **Save & Copy**
 - [x] Windows version — see [`windows/`](windows/) (beta)
+- [ ] Region / window capture (not just full screen)
+- [ ] Launch at login
 
 ## Windows
 
