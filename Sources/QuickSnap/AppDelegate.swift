@@ -144,12 +144,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func registerHotKeys() {
         captureHotKey.onFire = { [weak self] in self?.triggerCapture() }
-        captureHotKey.register(keyCode: Preferences.shared.keyCode,
-                               carbonModifiers: Preferences.shared.carbonModifiers)
+        let captureOK = captureHotKey.register(keyCode: Preferences.shared.keyCode,
+                                               carbonModifiers: Preferences.shared.carbonModifiers)
 
         annotateHotKey.onFire = { [weak self] in self?.triggerAnnotate() }
-        annotateHotKey.register(keyCode: Preferences.shared.annotateKeyCode,
-                                carbonModifiers: Preferences.shared.annotateCarbonModifiers)
+        let annotateOK = annotateHotKey.register(keyCode: Preferences.shared.annotateKeyCode,
+                                                 carbonModifiers: Preferences.shared.annotateCarbonModifiers)
+
+        var failures: [String] = []
+        if !captureOK { failures.append("Save & Copy — \(Preferences.shared.shortcutDisplay)") }
+        if !annotateOK { failures.append("Annotate — \(Preferences.shared.annotateShortcutDisplay)") }
+        if !failures.isEmpty { warnRegistrationFailed(failures) }
+    }
+
+    private func warnRegistrationFailed(_ shortcuts: [String]) {
+        let alert = NSAlert()
+        alert.messageText = "Couldn’t register a shortcut"
+        alert.informativeText = "Another app is already using "
+            + (shortcuts.count == 1 ? "this shortcut" : "these shortcuts")
+            + ", so QuickSnap couldn’t claim "
+            + (shortcuts.count == 1 ? "it" : "them") + ":\n\n• "
+            + shortcuts.joined(separator: "\n• ")
+            + "\n\nPick a different combination in Settings."
+        alert.addButton(withTitle: "Open Settings")
+        alert.addButton(withTitle: "Later")
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn {
+            openSettings()
+        }
     }
 
     // MARK: - Capture flow

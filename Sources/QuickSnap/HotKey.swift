@@ -32,14 +32,18 @@ final class HotKey {
     /// - Parameters:
     ///   - keyCode: a virtual key code (same values as `NSEvent.keyCode`).
     ///   - carbonModifiers: a mask of `cmdKey`, `optionKey`, `controlKey`, `shiftKey`.
-    func register(keyCode: UInt32, carbonModifiers: UInt32) {
+    /// - Returns: `true` if the OS accepted the hotkey (false usually means the
+    ///   combination is already claimed by another app).
+    @discardableResult
+    func register(keyCode: UInt32, carbonModifiers: UInt32) -> Bool {
         unregister()
         HotKey.installSharedHandlerIfNeeded()
         HotKey.registry[id] = self
 
         let hotKeyID = EventHotKeyID(signature: HotKey.signature, id: id)
-        RegisterEventHotKey(keyCode, carbonModifiers, hotKeyID,
-                            GetApplicationEventTarget(), 0, &hotKeyRef)
+        let status = RegisterEventHotKey(keyCode, carbonModifiers, hotKeyID,
+                                         GetApplicationEventTarget(), 0, &hotKeyRef)
+        return status == noErr && hotKeyRef != nil
     }
 
     func unregister() {
