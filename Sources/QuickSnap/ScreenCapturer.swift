@@ -83,3 +83,12 @@ enum CaptureOutput {
         return "Screenshot \(formatter.string(from: Date())).png"
     }
 }
+
+/// A silent haptic "nudge" — a physical tap on Force Touch trackpads, with no
+/// sound. It confirms a capture/save by feel. No-op on Macs without a haptic
+/// trackpad (e.g. an external mouse), so it's always safe to call.
+enum Feedback {
+    static func nudge() {
+        NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+    }
+}

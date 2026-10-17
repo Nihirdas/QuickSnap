@@ -10,11 +10,12 @@ final class SettingsWindowController: NSWindowController {
     private let pathLabel = NSTextField(labelWithString: "")
     private let recorder = RecorderView()
     private let annotateRecorder = RecorderView()
+    private let cropRecorder = RecorderView()
 
     init(onChange: @escaping () -> Void) {
         self.onChange = onChange
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 460, height: 340),
+            contentRect: NSRect(x: 0, y: 0, width: 460, height: 430),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -69,12 +70,23 @@ final class SettingsWindowController: NSWindowController {
         }
         configureRecorder(annotateRecorder)
 
+        let cropHeading = label("Crop & Annotate shortcut", font: .boldSystemFont(ofSize: 13))
+        cropRecorder.display = Preferences.shared.cropShortcutDisplay
+        cropRecorder.onCapture = { [weak self] keyCode, modifiers, text in
+            Preferences.shared.cropKeyCode = keyCode
+            Preferences.shared.cropCarbonModifiers = modifiers
+            Preferences.shared.cropShortcutDisplay = text
+            self?.onChange()
+        }
+        configureRecorder(cropRecorder)
+
         let caption = label("Click a field, then press your combination (include ⌘, ⌥ or ⌃).",
                             font: .systemFont(ofSize: 11))
         caption.textColor = .secondaryLabelColor
 
         let stack = NSStackView(views: [title, saveHeading, folderRow, shortcutHeading, recorder,
-                                        annotateHeading, annotateRecorder, caption])
+                                        annotateHeading, annotateRecorder,
+                                        cropHeading, cropRecorder, caption])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 10

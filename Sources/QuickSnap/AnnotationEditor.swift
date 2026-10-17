@@ -172,21 +172,40 @@ final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
         cacheDisplay(in: bounds, to: rep)
         return rep.representation(using: .png, properties: [:])
     }
+
+    /// Whether the user has actually drawn or typed anything. Commits any
+    /// in-progress text first so a half-typed note still counts.
+    func hasContent() -> Bool {
+        commitActiveText()
+        return !annotations.isEmpty
+    }
 }
 
 // MARK: - Window controller
 
-/// Hosts the annotation canvas and a small toolbar. "Save & Copy" writes the PNG,
-/// copies it to the clipboard, and closes; closing any other way discards.
+/// Hosts the annotation canvas and a small toolbar.
+///
+/// Two behaviours, chosen by `autosaveOnClose`:
+///   • Annotate mode (false): "Save & Copy" writes the PNG, copies it, and
+///     closes; closing any other way discards.
+///   • Crop mode (true): the raw crop is already saved when the editor opens, so
+///     here there's no explicit save — closing the window auto-saves the final
+///     annotated PNG and copies it, but only if something was actually drawn.
 final class AnnotationEditorWindowController: NSWindowController, NSWindowDelegate {
 
     private let canvas = AnnotationCanvasView()
     private let saveFolder: URL
     private var onClose: (() -> Void)?
+    /// Crop mode only: called after the window closes via "Crop Again" so the app
+    /// can restart the crop flow.
+    var onCropAgain: (() -> Void)?
+    private var recropRequested = false
+    private let autosaveOnClose: Bool
     private let fontSizes = ["14", "20", "28", "36", "48"]
 
-    init(image: CGImage, saveFolder: URL, onClose: @escaping () -> Void) {
+    init(image: CGImage, saveFolder: URL, autosaveOnClose: Bool = false, onClose: @escaping () -> Void) {
         self.saveFolder = saveFolder
+        self.autosaveOnClose = autosaveOnClose
         self.onClose = onClose
 
         let imageSize = NSSize(width: image.width, height: image.height)
@@ -203,8 +222,15 @@ final class AnnotationEditorWindowController: NSWindowController, NSWindowDelega
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: w, height: h),
                               styleMask: [.titled, .closable],
                               backing: .buffered, defer: false)
-        window.title = "QuickSnap — Annotate"
+        window.title = autosaveOnClose ? "QuickSnap — Crop & Annotate" : "QuickSnap — Annotate"
+        if autosaveOnClose { window.subtitle = "Saves & copies to clipboard when you close" }
         window.isReleasedWhenClosed = false
+        // QuickSnap has no Dock icon (menu-bar only), so a normal window gets
+        // buried the moment you switch apps and there's no way back. Float it
+        // above others and let it ride along across Spaces and over full-screen
+        // apps (e.g. a meeting) so it's always where you left it.
+        window.level = .floating
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         super.init(window: window)
         window.delegate = self
 
@@ -247,19 +273,33 @@ final class AnnotationEditorWindowController: NSWindowController, NSWindowDelega
         sizePop.action = #selector(fontSizeChanged(_:))
 
         let undo = NSButton(title: "Undo", target: self, action: #selector(undoTapped))
-        let cancel = NSButton(title: "Cancel", target: self, action: #selector(cancelTapped))
-        cancel.keyEquivalent = "\u{1b}"                     // Esc
-        let save = NSButton(title: "Save & Copy", target: self, action: #selector(saveAndCopy))
-        save.keyEquivalent = "\r"                            // Enter = default button
-        save.bezelStyle = .rounded
 
         let stack = NSStackView()
         stack.orientation = .horizontal
         stack.spacing = 10
         stack.translatesAutoresizingMaskIntoConstraints = false
         for v in [tools, colorWell, sizeLabel, sizePop, undo] { stack.addView(v, in: .leading) }
-        stack.addView(cancel, in: .trailing)
-        stack.addView(save, in: .trailing)
+
+        if autosaveOnClose {
+            // Crop mode: the raw crop is already saved; closing saves the final
+            // annotated version. No Cancel — there's nothing to discard. "Done"
+            // is deliberately NOT the Enter-default, so pressing Enter finishes a
+            // text box instead of closing the window mid-note. "Crop Again" throws
+            // this one away and restarts the region selection.
+            let recrop = NSButton(title: "Crop Again", target: self, action: #selector(cropAgainTapped))
+            let done = NSButton(title: "Done", target: self, action: #selector(doneTapped))
+            done.bezelStyle = .rounded
+            stack.addView(recrop, in: .trailing)
+            stack.addView(done, in: .trailing)
+        } else {
+            let cancel = NSButton(title: "Cancel", target: self, action: #selector(cancelTapped))
+            cancel.keyEquivalent = "\u{1b}"                 // Esc
+            let save = NSButton(title: "Save & Copy", target: self, action: #selector(saveAndCopy))
+            save.keyEquivalent = "\r"                        // Enter = default button
+            save.bezelStyle = .rounded
+            stack.addView(cancel, in: .trailing)
+            stack.addView(save, in: .trailing)
+        }
         bar.addSubview(stack)
         NSLayoutConstraint.activate([
             stack.leadingAnchor.constraint(equalTo: bar.leadingAnchor, constant: 14),
@@ -287,16 +327,34 @@ final class AnnotationEditorWindowController: NSWindowController, NSWindowDelega
 
     @objc private func cancelTapped() { window?.close() }
 
-    @objc private func saveAndCopy() {
-        if let png = canvas.flattenedPNG() {
-            try? png.write(to: saveFolder.appendingPathComponent(fileName()))
-            if let image = NSImage(data: png) {
-                let pasteboard = NSPasteboard.general
-                pasteboard.clearContents()
-                pasteboard.writeObjects([image])
-            }
-        }
+    /// Crop mode: just close — `windowWillClose` handles the save-if-changed.
+    @objc private func doneTapped() { window?.close() }
+
+    /// Crop mode: abandon this crop (don't save the annotated version) and start
+    /// a fresh selection. The raw crop saved when the editor opened stays put.
+    @objc private func cropAgainTapped() {
+        recropRequested = true
         window?.close()
+    }
+
+    @objc private func saveAndCopy() {
+        writeAndCopy()
+        window?.close()
+    }
+
+    /// Flatten the canvas, write a PNG to the save folder, and copy it to the
+    /// clipboard. Returns whether it actually wrote anything.
+    @discardableResult
+    private func writeAndCopy() -> Bool {
+        guard let png = canvas.flattenedPNG() else { return false }
+        try? png.write(to: saveFolder.appendingPathComponent(fileName()))
+        if let image = NSImage(data: png) {
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.writeObjects([image])
+        }
+        Feedback.nudge()
+        return true
     }
 
     private func fileName() -> String {
@@ -305,9 +363,24 @@ final class AnnotationEditorWindowController: NSWindowController, NSWindowDelega
         return "Screenshot \(formatter.string(from: Date())) (annotated).png"
     }
 
-    // Any close (button, X, discard) releases the controller.
+    // Any close (button, X, discard) releases the controller. In crop mode a
+    // close also auto-saves + copies the annotated result — but only when
+    // something was drawn, so an untouched crop doesn't duplicate the raw PNG
+    // that was already saved when the editor opened.
     func windowWillClose(_ notification: Notification) {
+        // On "Crop Again" we're deliberately throwing this crop away, so don't
+        // save its annotations — just restart the selection.
+        if autosaveOnClose, !recropRequested, canvas.hasContent() {
+            writeAndCopy()
+        }
         onClose?()
         onClose = nil
+
+        if recropRequested {
+            recropRequested = false
+            let restart = onCropAgain
+            onCropAgain = nil
+            restart?()
+        }
     }
 }

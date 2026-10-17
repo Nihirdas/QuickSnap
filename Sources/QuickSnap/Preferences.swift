@@ -16,6 +16,9 @@ final class Preferences {
         static let annotateKeyCode = "annotateHotKeyCode"
         static let annotateModifiers = "annotateHotKeyModifiers"
         static let annotateDisplay = "annotateHotKeyDisplay"
+        static let cropKeyCode = "cropHotKeyCode"
+        static let cropModifiers = "cropHotKeyModifiers"
+        static let cropDisplay = "cropHotKeyDisplay"
     }
 
     // MARK: - Save folder
@@ -92,5 +95,35 @@ final class Preferences {
     var annotateShortcutDisplay: String {
         get { defaults.string(forKey: Key.annotateDisplay) ?? "⌃⇧Q" }
         set { defaults.set(newValue, forKey: Key.annotateDisplay) }
+    }
+
+    // MARK: - Crop & Annotate hotkey — defaults to ⌃⌘A
+    //
+    // Drag-select a region, annotate it, then just close the window: the result
+    // auto-saves and lands on the clipboard (see AnnotationEditor's autosave mode).
+
+    var cropKeyCode: UInt32 {
+        get {
+            guard defaults.object(forKey: Key.cropKeyCode) != nil else {
+                return UInt32(kVK_ANSI_A)
+            }
+            return UInt32(defaults.integer(forKey: Key.cropKeyCode))
+        }
+        set { defaults.set(Int(newValue), forKey: Key.cropKeyCode) }
+    }
+
+    var cropCarbonModifiers: UInt32 {
+        get {
+            guard defaults.object(forKey: Key.cropModifiers) != nil else {
+                return UInt32(controlKey | cmdKey)
+            }
+            return UInt32(defaults.integer(forKey: Key.cropModifiers))
+        }
+        set { defaults.set(Int(newValue), forKey: Key.cropModifiers) }
+    }
+
+    var cropShortcutDisplay: String {
+        get { defaults.string(forKey: Key.cropDisplay) ?? "⌃⌘A" }
+        set { defaults.set(newValue, forKey: Key.cropDisplay) }
     }
 }

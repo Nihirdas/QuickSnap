@@ -242,7 +242,7 @@
       <a href="#problem">Why</a>
       <a href="#how">How it works</a>
       <a href="#features">Features</a>
-      <a href="#annotate">Annotate</a>
+      <a href="#annotate">Modes</a>
       <a href="#roadmap">Roadmap</a>
       <a class="gh" href="https://github.com/Nihirdas/QuickSnap">GitHub ↗</a>
     </div>
@@ -375,11 +375,11 @@
 <!-- CAPTURE MODES (both shipped) -->
 <section id="annotate" style="background:var(--bg2); border-top:1px solid var(--line); border-bottom:1px solid var(--line)">
   <div class="wrap">
-    <p class="eyebrow">Two ways to capture</p>
-    <h2>Snap it, or mark it up</h2>
-    <p class="section-lede">Two hotkeys, two speeds — a silent grab, or a quick annotate when the screenshot needs a pointer.</p>
+    <p class="eyebrow">Three ways to capture</p>
+    <h2>Snap it, crop it, or mark it up</h2>
+    <p class="section-lede">Three hotkeys — a silent full-screen grab, a quick annotate, or crop a region and mark it up.</p>
 
-    <div class="split" style="margin-top:30px">
+    <div class="grid" style="margin-top:30px">
       <div class="panel">
         <h3 style="margin-top:0">⚡ Quick capture <span style="color:var(--faint);font-weight:500;font-size:.85rem">· ⌃⇧C</span></h3>
         <p style="color:var(--muted); margin:.3em 0 0">
@@ -402,6 +402,21 @@
           <span style="font-size:.8rem;color:var(--accent2);border:1px solid #25402f;border-radius:999px;padding:.3em .8em">Save &amp; Copy</span>
         </div>
       </div>
+      <div class="panel" style="border-color:#25402f">
+        <h3 style="color:var(--accent2); margin-top:0">✂️ Crop &amp; Annotate <span style="color:var(--faint);font-weight:500;font-size:.85rem">· ⌃⌘A</span></h3>
+        <p style="color:var(--muted); margin:.3em 0 1em">
+          Drag-select any region, mark it up, then just <b>close the window</b> — it auto-saves the
+          result and copies it to the clipboard, no button needed. The raw crop is saved the instant
+          you select it, <b>Crop Again</b> re-picks the area, and the editor floats on top so it never
+          gets lost behind your meeting.
+        </p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <span style="font-size:.8rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.3em .8em">Drag-select</span>
+          <span style="font-size:.8rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.3em .8em">Annotate</span>
+          <span style="font-size:.8rem;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:.3em .8em">Crop Again</span>
+          <span style="font-size:.8rem;color:var(--accent2);border:1px solid #25402f;border-radius:999px;padding:.3em .8em">Save on close</span>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -413,7 +428,7 @@
     <h2>What's next</h2>
     <p class="section-lede">QuickSnap stays small — a few more things are on the way, starting on macOS.</p>
     <div class="grid" style="margin-top:30px">
-      <div class="feature"><h3>Region &amp; window capture</h3><p>Grab a selected area or a single window, not just the whole screen.</p></div>
+      <div class="feature"><h3>Window capture</h3><p>Click a single window to grab just it — region capture already shipped via Crop &amp; Annotate.</p></div>
       <div class="feature"><h3>Launch at login</h3><p>Always ready in the menu bar / tray the moment you start your machine.</p></div>
       <div class="feature"><h3>Installer builds</h3><p>A signed macOS build and a Windows installer for one-click setup.</p></div>
     </div>

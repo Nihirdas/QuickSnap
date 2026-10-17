@@ -19,7 +19,13 @@ bar and waits for the shortcut.
   folder, and copy it to the clipboard — one silent keystroke.
 - **Annotate** (`⌃⇧Q`, rebindable) → capture, then mark it up in a quick editor
   (arrow, box, circle, text) and **Save & Copy** in a single click.
+- **Crop & Annotate** (`⌃⌘A`, rebindable) → drag-select a region of the screen,
+  mark it up, then just **close the window** — it auto-saves the result and copies
+  it to the clipboard, no button needed. The raw crop is saved the moment you
+  select it too, and **Crop Again** lets you re-pick the region. The editor floats
+  on top so it isn't lost behind your other windows.
 - **Choose your folder** — Desktop, Downloads, or any folder, from Settings.
+- A silent haptic tap confirms each capture (on Force Touch trackpads).
 - Menu-bar only — lightweight, no Dock icon, no dependencies.
 
 ## Requirements
@@ -45,7 +51,7 @@ bundle, then ad-hoc code-signs it.
 2. The first time you capture, macOS asks for **Screen Recording** permission —
    allow it under *System Settings › Privacy & Security › Screen Recording*, then
    capture again.
-3. Press `⌃⌥⌘S` (or your custom shortcut) anywhere. The screen is saved and
+3. Press `⌃⇧C` (or your custom shortcut) anywhere. The screen is saved and
    copied; the menu-bar icon flashes a checkmark to confirm.
 
 > Because the app is ad-hoc signed (not notarized), macOS may re-ask for Screen
@@ -56,7 +62,8 @@ bundle, then ad-hoc code-signs it.
 Open **Settings…** from the menu-bar menu to:
 
 - choose the save folder (Desktop / Downloads / any folder), and
-- record a new capture shortcut — click the field and press your combination.
+- record shortcuts for all three actions (Save & Copy, Annotate, Crop & Annotate) —
+  click a field and press your combination.
 
 ## How it's built
 
@@ -73,8 +80,9 @@ A small, dependency-free Swift package. The interesting pieces:
 ## Roadmap
 
 - [x] **Annotate mode** — second hotkey opens a quick editor (arrow, box, circle, text) → **Save & Copy**
+- [x] **Crop & Annotate** — drag-select a region, annotate, auto-save + copy on close (`⌃⌘A`)
 - [x] Windows version — see [`windows/`](windows/) (beta)
-- [ ] Region / window capture (not just full screen)
+- [ ] Window capture (click a window to grab just it)
 - [ ] Launch at login
 
 ## Windows

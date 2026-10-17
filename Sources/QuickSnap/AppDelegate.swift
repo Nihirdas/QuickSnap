@@ -6,8 +6,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let captureHotKey = HotKey(id: 1)
     private let annotateHotKey = HotKey(id: 2)
+    private let cropHotKey = HotKey(id: 3)
     private var settingsController: SettingsWindowController?
     private var annotateEditor: AnnotationEditorWindowController?
+    private var cropController: CropSelectionController?
+
+    /// The normal menu-bar icon. Kept as the single source of truth so the brief
+    /// "success" flash always reverts to *this*, never to a stale checkmark.
+    private let baseStatusIcon: NSImage? = {
+        let image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "QuickSnap")
+        image?.isTemplate = true
+        return image
+    }()
+    private var flashRevert: DispatchWorkItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setUpStatusItem()
@@ -18,11 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setUpStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "camera.viewfinder",
-                                   accessibilityDescription: "QuickSnap")
-            button.image?.isTemplate = true
-        }
+        statusItem.button?.image = baseStatusIcon
         rebuildMenu()
     }
 
@@ -42,6 +49,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                   keyEquivalent: "")
         annotate.target = self
         menu.addItem(annotate)
+
+        let cropAnnotate = NSMenuItem(title: "Crop & Annotate…",
+                                      action: #selector(cropAnnotate),
+                                      keyEquivalent: "")
+        cropAnnotate.target = self
+        menu.addItem(cropAnnotate)
 
         menu.addItem(.separator())
 
@@ -80,6 +93,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         annotateShortcut.isEnabled = false
         menu.addItem(annotateShortcut)
 
+        let cropShortcut = NSMenuItem(title: "Crop & Annotate: \(Preferences.shared.cropShortcutDisplay)",
+                                      action: nil, keyEquivalent: "")
+        cropShortcut.isEnabled = false
+        menu.addItem(cropShortcut)
+
         let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
@@ -102,6 +120,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func captureAnnotate() {
         triggerAnnotate()
+    }
+
+    @objc private func cropAnnotate() {
+        triggerCropAnnotate()
     }
 
     @objc private func selectFolder(_ sender: NSMenuItem) {
@@ -151,9 +173,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let annotateOK = annotateHotKey.register(keyCode: Preferences.shared.annotateKeyCode,
                                                  carbonModifiers: Preferences.shared.annotateCarbonModifiers)
 
+        cropHotKey.onFire = { [weak self] in self?.triggerCropAnnotate() }
+        let cropOK = cropHotKey.register(keyCode: Preferences.shared.cropKeyCode,
+                                         carbonModifiers: Preferences.shared.cropCarbonModifiers)
+
         var failures: [String] = []
         if !captureOK { failures.append("Save & Copy — \(Preferences.shared.shortcutDisplay)") }
         if !annotateOK { failures.append("Annotate — \(Preferences.shared.annotateShortcutDisplay)") }
+        if !cropOK { failures.append("Crop & Annotate — \(Preferences.shared.cropShortcutDisplay)") }
         if !failures.isEmpty { warnRegistrationFailed(failures) }
     }
 
@@ -202,28 +229,79 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func openAnnotationEditor(with image: CGImage) {
+    private func openAnnotationEditor(with image: CGImage, autosave: Bool = false) {
         let editor = AnnotationEditorWindowController(
             image: image,
             saveFolder: Preferences.shared.saveFolderURL,
+            autosaveOnClose: autosave,
             onClose: { [weak self] in self?.annotateEditor = nil }
         )
+        if autosave {
+            // "Crop Again" discards this editor and restarts the crop flow.
+            editor.onCropAgain = { [weak self] in self?.triggerCropAnnotate() }
+        }
         annotateEditor = editor
         NSApp.activate(ignoringOtherApps: true)
         editor.showWindow(nil)
         editor.window?.makeKeyAndOrderFront(nil)
     }
 
-    /// Briefly swap the menu-bar icon to a checkmark as capture feedback.
+    // MARK: - Crop & Annotate flow
+
+    private func triggerCropAnnotate() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                // Freeze the screen first so the selection overlay never ends up
+                // in the shot, then let the user drag out a region.
+                let image = try await ScreenCapturer.captureMainDisplay()
+                let controller = CropSelectionController(image: image) { [weak self] cropped in
+                    guard let self else { return }
+                    self.cropController = nil
+                    guard let cropped else { return }   // Esc or stray click = cancel
+
+                    // On crop: save the raw region + copy it to the clipboard
+                    // right away, as a safety net, before opening the editor.
+                    do {
+                        try CaptureOutput.save(image: cropped, to: Preferences.shared.saveFolderURL)
+                    } catch {
+                        self.showCaptureError(error)
+                        return
+                    }
+                    CaptureOutput.copyToClipboard(image: cropped)
+                    self.flashSuccess()
+
+                    // Then open the editor in autosave mode: closing it saves the
+                    // annotated version too (only if something was drawn).
+                    self.openAnnotationEditor(with: cropped, autosave: true)
+                }
+                cropController = controller
+                controller.begin()
+            } catch {
+                showCaptureError(error)
+            }
+        }
+    }
+
+    /// Briefly swap the menu-bar icon to a checkmark as capture feedback, plus a
+    /// silent haptic nudge. Always reverts to `baseStatusIcon` and cancels any
+    /// in-flight revert, so overlapping captures can't leave it stuck on the
+    /// checkmark.
     private func flashSuccess() {
         guard let button = statusItem.button else { return }
-        let original = button.image
-        button.image = NSImage(systemSymbolName: "checkmark.circle.fill",
-                               accessibilityDescription: "Captured")
-        button.image?.isTemplate = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-            button.image = original
+        Feedback.nudge()
+
+        flashRevert?.cancel()
+        let check = NSImage(systemSymbolName: "checkmark.circle.fill",
+                            accessibilityDescription: "Captured")
+        check?.isTemplate = true
+        button.image = check
+
+        let revert = DispatchWorkItem { [weak self] in
+            self?.statusItem.button?.image = self?.baseStatusIcon
         }
+        flashRevert = revert
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8, execute: revert)
     }
 
     private func showCaptureError(_ error: Error) {
