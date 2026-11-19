@@ -65,6 +65,36 @@ Open **Settings…** from the menu-bar menu to:
 - record shortcuts for all three actions (Save & Copy, Annotate, Crop & Annotate) —
   click a field and press your combination.
 
+## Uninstall
+
+QuickSnap has no installer — it's a self-contained `.app` plus a small
+preferences file — so removing it completely is just a few commands:
+
+```bash
+# Quit the app
+killall QuickSnap 2>/dev/null
+
+# Delete the app bundle (from the repo's build/ folder and/or Applications)
+rm -rf build/QuickSnap.app /Applications/QuickSnap.app ~/Applications/QuickSnap.app
+
+# Remove its saved settings (shortcuts + save-folder choice)
+defaults delete dev.nihir.quicksnap 2>/dev/null
+rm -f ~/Library/Preferences/dev.nihir.quicksnap.plist
+
+# Revoke the Screen Recording permission it was granted
+tccutil reset ScreenCapture dev.nihir.quicksnap
+```
+
+Run the delete step from wherever you keep `QuickSnap.app` (the `build/` path
+assumes you're in the cloned repo). Your **saved screenshots are left
+untouched** — they stay wherever QuickSnap put them. If `tccutil` isn't
+available on your macOS version, remove the permission by hand under
+*System Settings › Privacy & Security › Screen Recording* (select QuickSnap,
+then click **−**).
+
+On **Windows**, quit the tray app, delete `QuickSnap.exe`, and remove the
+`%AppData%\QuickSnap` settings folder.
+
 ## How it's built
 
 A small, dependency-free Swift package. The interesting pieces:

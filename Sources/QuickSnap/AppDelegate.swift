@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsController: SettingsWindowController?
     private var annotateEditor: AnnotationEditorWindowController?
     private var cropController: CropSelectionController?
+    private var isCropping = false
 
     /// The normal menu-bar icon. Kept as the single source of truth so the brief
     /// "success" flash always reverts to *this*, never to a stale checkmark.
@@ -201,9 +202,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Close the menu-bar menu if it's open. A global hotkey can fire while the
+    /// menu is tracking (its own modal run loop); starting a capture — and
+    /// especially the full-screen crop overlay — from inside that loop leaves the
+    /// new window unable to receive clicks or Esc, so it gets stuck on screen.
+    private func dismissMenuIfOpen() {
+        statusItem.menu?.cancelTrackingWithoutAnimation()
+    }
+
     // MARK: - Capture flow
 
     private func triggerCapture() {
+        dismissMenuIfOpen()
         Task { @MainActor in
             do {
                 let image = try await ScreenCapturer.captureMainDisplay()
@@ -219,6 +229,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Annotate flow
 
     private func triggerAnnotate() {
+        dismissMenuIfOpen()
         Task { @MainActor in
             do {
                 let image = try await ScreenCapturer.captureMainDisplay()
@@ -249,6 +260,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Crop & Annotate flow
 
     private func triggerCropAnnotate() {
+        dismissMenuIfOpen()
+        // Ignore repeat presses while a crop is already in progress, so overlays
+        // can't stack on top of each other.
+        guard !isCropping else { return }
+        isCropping = true
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
@@ -258,7 +274,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let controller = CropSelectionController(image: image) { [weak self] cropped in
                     guard let self else { return }
                     self.cropController = nil
-                    guard let cropped else { return }   // Esc or stray click = cancel
+                    self.isCropping = false
+                    guard let cropped else { return }   // Esc, stray click, or lost focus = cancel
 
                     // On crop: save the raw region + copy it to the clipboard
                     // right away, as a safety net, before opening the editor.
@@ -275,10 +292,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     // annotated version too (only if something was drawn).
                     self.openAnnotationEditor(with: cropped, autosave: true)
                 }
-                cropController = controller
+                self.cropController = controller
                 controller.begin()
             } catch {
-                showCaptureError(error)
+                self.isCropping = false
+                self.showCaptureError(error)
             }
         }
     }

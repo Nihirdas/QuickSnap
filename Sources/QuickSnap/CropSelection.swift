@@ -9,6 +9,8 @@ import AppKit
 final class CropSelectionController {
 
     private var overlayWindow: OverlayWindow?
+    private var resignObserver: NSObjectProtocol?
+    private var completed = false
     private let cgImage: CGImage
     private let completion: (CGImage?) -> Void
 
@@ -51,12 +53,32 @@ final class CropSelectionController {
         overlayWindow = window
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
         window.makeFirstResponder(view)
+
+        // Safety net: if the app loses focus for any reason — you Cmd-Tab away,
+        // or the overlay somehow never became key — cancel the crop instead of
+        // leaving a full-screen window stuck on top with no way out.
+        resignObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didResignActiveNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.finish(with: nil)
+        }
     }
 
     /// Maps a selection rectangle (in the overlay view's top-left points) to the
     /// captured image's pixel space and crops it.
     private func finish(with viewRect: CGRect?) {
+        // Run exactly once — a mouse-up and a focus-loss can both land here.
+        guard !completed else { return }
+        completed = true
+
+        if let resignObserver {
+            NotificationCenter.default.removeObserver(resignObserver)
+            self.resignObserver = nil
+        }
+
         let window = overlayWindow
         overlayWindow = nil
         window?.orderOut(nil)

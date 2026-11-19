@@ -22,7 +22,7 @@ struct Annotation {
 final class AnnotationCanvasView: NSView, NSTextFieldDelegate {
 
     var backgroundImage: NSImage?
-    var currentTool: AnnotationTool = .arrow
+    var currentTool: AnnotationTool = .box
     var currentColor: NSColor = .systemRed
     var currentFontSize: CGFloat = 20
 
@@ -256,7 +256,7 @@ final class AnnotationEditorWindowController: NSWindowController, NSWindowDelega
 
         let tools = NSSegmentedControl(labels: ["↗ Arrow", "▢ Box", "◯ Circle", "T Text"],
                                        trackingMode: .selectOne, target: self, action: #selector(toolChanged(_:)))
-        tools.selectedSegment = 0
+        tools.selectedSegment = 1               // Box — matches the canvas's default tool
 
         let colorWell = NSColorWell()
         colorWell.color = .systemRed
@@ -273,6 +273,8 @@ final class AnnotationEditorWindowController: NSWindowController, NSWindowDelega
         sizePop.action = #selector(fontSizeChanged(_:))
 
         let undo = NSButton(title: "Undo", target: self, action: #selector(undoTapped))
+        undo.keyEquivalent = "z"                 // ⌘Z, the standard undo shortcut
+        undo.keyEquivalentModifierMask = .command
 
         let stack = NSStackView()
         stack.orientation = .horizontal
